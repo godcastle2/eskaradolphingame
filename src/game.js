@@ -179,6 +179,7 @@ function spawnRing() {
     tilt: visualTilt,
     visualTilt,
     hitCooldown: 0,
+    stallTimer: 0,
     touched: false,
     passed: false
   });
@@ -222,8 +223,11 @@ function update(dt) {
   }
 
   for (const ring of state.rings) {
-    ring.x -= speed * dt;
-    ring.vx = -speed;
+    const stalled = ring.stallTimer > 0;
+    ring.stallTimer = Math.max(0, (ring.stallTimer || 0) - dt);
+    const ringSpeed = stalled ? speed * 0.08 : speed;
+    ring.x -= ringSpeed * dt;
+    ring.vx = -ringSpeed;
     ring.vy = 0;
     ring.hitCooldown = Math.max(0, ring.hitCooldown - dt);
     resolveRingCollision(ring);
@@ -243,9 +247,8 @@ function didPassRing(ring) {
   const cleanPassRadius = Math.max(1, CONFIG.dolphin.radiusY - CONFIG.dolphin.passPadding);
   if (clearance.normalized + cleanPassRadius < ring.inner) return true;
 
-  if (!ring.touched) return false;
-  const hitPassAllowance = CONFIG.dolphin.bodyRadius * 0.95;
-  return clearance.normalized < ring.inner + hitPassAllowance;
+  if (ring.touched) return true;
+  return false;
 }
 
 function scoreRing(ring) {
@@ -280,6 +283,7 @@ function resolveRingCollision(ring) {
 
   ring.touched = true;
   ring.hitCooldown = cfg.collisionCooldown;
+  ring.stallTimer = Math.max(ring.stallTimer || 0, 0.18);
   state.dolphin.x = state.dolphin.body.x;
   state.dolphin.y = state.dolphin.body.y;
   state.dolphin.vx = state.dolphin.body.vx;
@@ -637,22 +641,22 @@ function drawDolphin() {
   const fin = Math.sin(d.swim + 1.1) * toScreen(4);
   const bodyBob = Math.sin(d.swim * 0.5) * toScreen(1.8);
   ctx.translate(0, bodyBob);
-  ctx.shadowColor = "rgba(1, 35, 74, .42)";
+  ctx.shadowColor = "rgba(1, 23, 52, .5)";
   ctx.shadowBlur = toScreen(18);
   ctx.shadowOffsetY = toScreen(3);
 
   const bodyGradient = ctx.createRadialGradient(toScreen(12), toScreen(-16), toScreen(8), toScreen(0), toScreen(0), toScreen(62));
-  bodyGradient.addColorStop(0, "#f0fdff");
-  bodyGradient.addColorStop(0.34, "#71dbff");
-  bodyGradient.addColorStop(0.74, "#1d83d4");
-  bodyGradient.addColorStop(1, "#0e5ea9");
+  bodyGradient.addColorStop(0, "#f7fbff");
+  bodyGradient.addColorStop(0.28, "#b9d1df");
+  bodyGradient.addColorStop(0.68, "#6f96ad");
+  bodyGradient.addColorStop(1, "#426c86");
 
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.strokeStyle = "rgba(3, 52, 100, .74)";
+  ctx.strokeStyle = "rgba(13, 45, 68, .82)";
   ctx.lineWidth = toScreen(4);
 
-  ctx.fillStyle = "#1b79bd";
+  ctx.fillStyle = "#6d93aa";
   ctx.beginPath();
   ctx.moveTo(toScreen(-38), toScreen(3));
   ctx.bezierCurveTo(toScreen(-55), toScreen(-12), toScreen(-76), toScreen(-8) + tail, toScreen(-88), toScreen(0) + tail);
@@ -661,7 +665,7 @@ function drawDolphin() {
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#155f9f";
+  ctx.fillStyle = "#486f88";
   ctx.beginPath();
   ctx.moveTo(toScreen(-82), toScreen(0) + tail);
   ctx.lineTo(toScreen(-104), toScreen(-17) + tail);
@@ -681,15 +685,15 @@ function drawDolphin() {
   ctx.bezierCurveTo(toScreen(-52), toScreen(6), toScreen(-52), toScreen(3), toScreen(-45), toScreen(2));
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = "rgba(2, 48, 98, .82)";
+  ctx.strokeStyle = "rgba(9, 38, 61, .9)";
   ctx.lineWidth = toScreen(3.8);
   ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
   const bellyGradient = ctx.createLinearGradient(toScreen(-25), toScreen(2), toScreen(45), toScreen(32));
-  bellyGradient.addColorStop(0, "rgba(235, 253, 255, .92)");
-  bellyGradient.addColorStop(1, "rgba(173, 238, 251, .45)");
+  bellyGradient.addColorStop(0, "rgba(255, 255, 250, .96)");
+  bellyGradient.addColorStop(1, "rgba(215, 231, 238, .62)");
   ctx.fillStyle = bellyGradient;
   ctx.beginPath();
   ctx.moveTo(toScreen(-25), toScreen(9));
@@ -708,32 +712,39 @@ function drawDolphin() {
   ctx.ellipse(toScreen(8), toScreen(-13), toScreen(34), toScreen(7), -0.13, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#2f8bbb";
+  ctx.fillStyle = "#567d94";
   ctx.beginPath();
   ctx.moveTo(toScreen(-6), toScreen(-24));
   ctx.bezierCurveTo(toScreen(7), toScreen(-50), toScreen(28), toScreen(-42), toScreen(25), toScreen(-17));
   ctx.bezierCurveTo(toScreen(12), toScreen(-24), toScreen(2), toScreen(-24), toScreen(-6), toScreen(-24));
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "rgba(9, 38, 61, .72)";
+  ctx.lineWidth = toScreen(2.5);
+  ctx.stroke();
 
-  ctx.fillStyle = "#2b80ad";
+  ctx.fillStyle = "#3f657d";
   ctx.beginPath();
   ctx.moveTo(toScreen(-2), toScreen(14));
   ctx.bezierCurveTo(toScreen(10), toScreen(31) + fin, toScreen(21), toScreen(42) + fin, toScreen(37), toScreen(41) + fin);
   ctx.bezierCurveTo(toScreen(31), toScreen(25) + fin, toScreen(16), toScreen(14), toScreen(2), toScreen(9));
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
-  ctx.fillStyle = "#5ecff1";
+  ctx.fillStyle = "#d7edf4";
   ctx.beginPath();
-  ctx.moveTo(toScreen(40), toScreen(-17));
-  ctx.bezierCurveTo(toScreen(58), toScreen(-20), toScreen(77), toScreen(-11), toScreen(89), toScreen(-2));
-  ctx.bezierCurveTo(toScreen(79), toScreen(4), toScreen(62), toScreen(6), toScreen(48), toScreen(-1));
-  ctx.bezierCurveTo(toScreen(44), toScreen(-6), toScreen(41), toScreen(-11), toScreen(40), toScreen(-17));
+  ctx.moveTo(toScreen(39), toScreen(-16));
+  ctx.bezierCurveTo(toScreen(59), toScreen(-24), toScreen(84), toScreen(-15), toScreen(101), toScreen(-5));
+  ctx.bezierCurveTo(toScreen(88), toScreen(3), toScreen(64), toScreen(8), toScreen(47), toScreen(0));
+  ctx.bezierCurveTo(toScreen(43), toScreen(-5), toScreen(40), toScreen(-11), toScreen(39), toScreen(-16));
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "rgba(9, 38, 61, .68)";
+  ctx.lineWidth = toScreen(2.4);
+  ctx.stroke();
 
-  ctx.fillStyle = "#263f5f";
+  ctx.fillStyle = "#102842";
   ctx.beginPath();
   ctx.arc(toScreen(42), toScreen(-13), toScreen(3.5), 0, Math.PI * 2);
   ctx.fill();
