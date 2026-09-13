@@ -167,6 +167,7 @@ function flapDolphin() {
 function spawnRing() {
   const cfg = CONFIG.rings;
   const drift = (Math.random() * 2 - 1) * CONFIG.difficulty.verticalNoise;
+  const visualTilt = cfg.minVisualTilt + Math.random() * (cfg.maxVisualTilt - cfg.minVisualTilt);
   state.lastRingY = clamp(state.lastRingY + drift, cfg.minY, cfg.maxY);
   state.rings.push({
     x: CONFIG.world.baseWidth + cfg.outerRadius,
@@ -174,8 +175,8 @@ function spawnRing() {
     outer: cfg.outerRadius,
     inner: Math.max(42, cfg.innerRadius - Math.min(12, state.score * 0.16)),
     wobble: Math.random() * Math.PI * 2,
-    tilt: cfg.minTilt + Math.random() * (cfg.maxTilt - cfg.minTilt),
-    visualTilt: cfg.minVisualTilt + Math.random() * (cfg.maxVisualTilt - cfg.minVisualTilt),
+    tilt: visualTilt,
+    visualTilt,
     hitCooldown: 0,
     touched: false,
     passed: false
@@ -338,6 +339,21 @@ function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" }[char]));
 }
 
+async function loadRankingClean() {
+  ui.rankingPanel.classList.remove("hidden");
+  ui.rankingList.innerHTML = "<li>Loading rankings...</li>";
+  try {
+    const res = await fetch(`/api/rankings?limit=${CONFIG.ranking.limit}`);
+    const data = await res.json();
+    ui.rankingList.innerHTML = data.rankings.map((row) => {
+      const mine = row.id === lastSubmitId ? " class=\"mine\"" : "";
+      return `<li${mine}><span>#${row.rank} ${escapeHtml(row.player)}</span><strong>${row.score}</strong></li>`;
+    }).join("") || "<li>No scores yet.</li>";
+  } catch {
+    ui.rankingList.innerHTML = "<li>Ranking server unavailable.</li>";
+  }
+}
+
 function updateHud() {
   ui.score.textContent = state.score;
   ui.combo.textContent = state.combo;
@@ -379,9 +395,9 @@ function draw() {
 
 function drawBackground() {
   const grd = ctx.createLinearGradient(0, 0, 0, height);
-  grd.addColorStop(0, "#65d5f1");
-  grd.addColorStop(0.58, "#229cca");
-  grd.addColorStop(1, "#0d638f");
+  grd.addColorStop(0, "#8cebf3");
+  grd.addColorStop(0.52, "#1689bd");
+  grd.addColorStop(1, "#084a78");
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, width, height);
 
@@ -556,24 +572,31 @@ function drawDolphin() {
   const fin = Math.sin(d.swim + 1.1) * toScreen(4);
   const bodyBob = Math.sin(d.swim * 0.5) * toScreen(1.8);
   ctx.translate(0, bodyBob);
-  ctx.shadowColor = "rgba(1, 54, 88, .22)";
-  ctx.shadowBlur = toScreen(12);
+  ctx.shadowColor = "rgba(1, 35, 74, .42)";
+  ctx.shadowBlur = toScreen(18);
+  ctx.shadowOffsetY = toScreen(3);
 
   const bodyGradient = ctx.createRadialGradient(toScreen(12), toScreen(-16), toScreen(8), toScreen(0), toScreen(0), toScreen(62));
-  bodyGradient.addColorStop(0, "#94efff");
-  bodyGradient.addColorStop(0.42, "#42bff1");
-  bodyGradient.addColorStop(0.82, "#238ed1");
-  bodyGradient.addColorStop(1, "#1674b7");
+  bodyGradient.addColorStop(0, "#f0fdff");
+  bodyGradient.addColorStop(0.34, "#71dbff");
+  bodyGradient.addColorStop(0.74, "#1d83d4");
+  bodyGradient.addColorStop(1, "#0e5ea9");
 
-  ctx.fillStyle = "#2386c5";
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "rgba(3, 52, 100, .74)";
+  ctx.lineWidth = toScreen(4);
+
+  ctx.fillStyle = "#1b79bd";
   ctx.beginPath();
   ctx.moveTo(toScreen(-38), toScreen(3));
   ctx.bezierCurveTo(toScreen(-55), toScreen(-12), toScreen(-76), toScreen(-8) + tail, toScreen(-88), toScreen(0) + tail);
   ctx.bezierCurveTo(toScreen(-72), toScreen(3), toScreen(-55), toScreen(12) - tail, toScreen(-38), toScreen(10));
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
-  ctx.fillStyle = "#1f7ebb";
+  ctx.fillStyle = "#155f9f";
   ctx.beginPath();
   ctx.moveTo(toScreen(-82), toScreen(0) + tail);
   ctx.lineTo(toScreen(-104), toScreen(-17) + tail);
@@ -582,6 +605,7 @@ function drawDolphin() {
   ctx.quadraticCurveTo(toScreen(-95), toScreen(6) + tail, toScreen(-82), toScreen(0) + tail);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
   ctx.fillStyle = bodyGradient;
   ctx.beginPath();
@@ -592,7 +616,11 @@ function drawDolphin() {
   ctx.bezierCurveTo(toScreen(-52), toScreen(6), toScreen(-52), toScreen(3), toScreen(-45), toScreen(2));
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "rgba(2, 48, 98, .82)";
+  ctx.lineWidth = toScreen(3.8);
+  ctx.stroke();
   ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
 
   const bellyGradient = ctx.createLinearGradient(toScreen(-25), toScreen(2), toScreen(45), toScreen(32));
   bellyGradient.addColorStop(0, "rgba(235, 253, 255, .92)");
@@ -683,8 +711,8 @@ window.addEventListener("pointerup", inputUp);
 window.addEventListener("pointercancel", inputUp);
 ui.startButton.addEventListener("click", startGame);
 ui.restartButton.addEventListener("click", startGame);
-ui.rankingButton.addEventListener("click", loadRanking);
-ui.showRankingButton.addEventListener("click", loadRanking);
+ui.rankingButton.addEventListener("click", loadRankingClean);
+ui.showRankingButton.addEventListener("click", loadRankingClean);
 ui.closeRankingButton.addEventListener("click", () => ui.rankingPanel.classList.add("hidden"));
 ui.playerName.value = localStorage.getItem("dolphin.name") || "";
 
