@@ -240,9 +240,15 @@ function update(dt) {
       if (didPassRing(ring)) {
         ring.passed = true;
         scoreRing(ring);
+      } else {
+        endGame();
+        break;
       }
     }
-    if (!ring.passed && ring.x + ring.outer < CONFIG.rings.missX) endGame();
+    if (!ring.passed && ring.x + ring.outer < CONFIG.rings.missX) {
+      endGame();
+      break;
+    }
   }
   state.rings = state.rings.filter((ring) => ring.x + ring.outer > -40);
 }
@@ -250,10 +256,7 @@ function update(dt) {
 function didPassRing(ring) {
   const clearance = getRingClearance(ring);
   const cleanPassRadius = Math.max(1, CONFIG.dolphin.radiusY - CONFIG.dolphin.passPadding);
-  if (clearance.normalized + cleanPassRadius < ring.inner) return true;
-
-  if (ring.touched) return true;
-  return false;
+  return clearance.normalized + cleanPassRadius < ring.inner;
 }
 
 function ringGravityRelief(body) {
