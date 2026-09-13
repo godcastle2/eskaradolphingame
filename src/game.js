@@ -80,6 +80,7 @@ function createState(mode = "playing") {
     },
     rings: [],
     obstacles: [],
+    comboBursts: [],
     particles: makeParticles(),
     backgroundDolphins: makeBackgroundDolphins(),
     spawnTimer: 0,
@@ -227,9 +228,7 @@ function update(dt) {
     ring.hitCooldown = Math.max(0, ring.hitCooldown - dt);
     resolveRingCollision(ring);
     if (!ring.passed && ring.x < dolphin.x - CONFIG.dolphin.radiusX * 0.35) {
-      const passRadius = Math.max(1, CONFIG.dolphin.radiusY - CONFIG.dolphin.passPadding);
-      const passedThroughHole = getRingClearance(ring).normalized + passRadius < ring.inner;
-      if (passedThroughHole) {
+      if (didPassRing(ring)) {
         ring.passed = true;
         scoreRing(ring);
       }
@@ -239,6 +238,16 @@ function update(dt) {
   state.rings = state.rings.filter((ring) => ring.x + ring.outer > -40);
 }
 
+function didPassRing(ring) {
+  const clearance = getRingClearance(ring);
+  const cleanPassRadius = Math.max(1, CONFIG.dolphin.radiusY - CONFIG.dolphin.passPadding);
+  if (clearance.normalized + cleanPassRadius < ring.inner) return true;
+
+  if (!ring.touched) return false;
+  const hitPassAllowance = CONFIG.dolphin.bodyRadius * 0.95;
+  return clearance.normalized < ring.inner + hitPassAllowance;
+}
+
 function scoreRing(ring) {
   const clearance = getRingClearance(ring);
   const clean = !ring.touched && clearance.normalized + CONFIG.dolphin.cleanRadius < ring.inner;
@@ -246,6 +255,7 @@ function scoreRing(ring) {
     state.combo += 1;
     state.score += state.combo;
     showToast(`CLEAN! +${state.combo}`);
+    showComboBurst(ring, state.combo);
   } else {
     state.score += 1;
     state.combo = 0;
@@ -382,6 +392,10 @@ function updateAmbient(dt) {
       d.y = 95 + Math.random() * 320;
     }
   }
+  for (const burst of state.comboBursts) {
+    burst.age += dt;
+  }
+  state.comboBursts = state.comboBursts.filter((burst) => burst.age < burst.duration);
 }
 
 function draw() {
@@ -390,6 +404,7 @@ function draw() {
   drawRings();
   drawDolphin();
   drawFrontRings();
+  drawComboBursts();
   if (performance.now() > toastUntil) ui.toast.classList.remove("show");
 }
 
@@ -557,6 +572,56 @@ function drawFilledRingHalf(rx, ry, innerRx, innerRy, start, end, fill, shadow, 
 function drawEllipseArc(x, y, rx, ry, start, end) {
   ctx.beginPath();
   ctx.ellipse(x, y, rx, ry, 0, start, end);
+}
+
+function showComboBurst(ring, combo) {
+  state.comboBursts.push({
+    x: ring.x,
+    y: ring.y,
+    combo,
+    age: 0,
+    duration: 0.7
+  });
+}
+
+function drawComboBursts() {
+  for (const burst of state.comboBursts) {
+    const t = Math.min(1, burst.age / burst.duration);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const x = toScreen(burst.x);
+    const y = worldY(burst.y);
+    const alpha = 1 - t;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = toScreen(3);
+    ctx.strokeStyle = "rgba(255, 245, 120, .9)";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, toScreen(34 + 46 * ease), toScreen(60 + 58 * ease), 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, .85)";
+    ctx.lineWidth = toScreen(2);
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI * 0.25 + burst.age * 3;
+      const r0 = toScreen(48 + 20 * ease);
+      const r1 = toScreen(70 + 34 * ease);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+      ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "#fff26d";
+    ctx.font = `900 ${Math.round(toScreen(22 + burst.combo * 1.2))}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(0, 44, 82, .5)";
+    ctx.shadowBlur = toScreen(8);
+    ctx.fillText(`COMBO x${burst.combo}`, 0, toScreen(-92 - 20 * ease));
+    ctx.restore();
+  }
 }
 
 function drawDolphin() {
