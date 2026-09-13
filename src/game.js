@@ -515,22 +515,22 @@ function drawRingHalf(ring, half) {
   if (half === "back") {
     drawRingShadow(rx, ry, depth);
     drawRingDepth(rx, ry, innerRx, innerRy, depth, ring.touched);
-    drawFilledRing(rx + depth, ry, innerRx + depth * 0.44, innerRy, ring.touched ? "#a60c0c" : "#8f0606", false);
-    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#bb1010" : "#a30707", false, false);
+    drawFilledRing(rx, ry, innerRx, innerRy, ring.touched ? "#c81410" : "#d80805", false);
+    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#9f0c0b" : "#860606", false, false);
     ctx.restore();
     return;
   }
 
-  drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 0.5, Math.PI * 1.5, ring.touched ? "#ff2c1f" : "#ff170c", false, true);
+  drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 0.5, Math.PI * 1.5, ring.touched ? "#ef2118" : "#f0170d", false, true);
   drawRingHighlights(rx, ry, innerRx, innerRy);
   ctx.restore();
 }
 
 function drawRingShadow(rx, ry, depth) {
   ctx.save();
-  ctx.translate(depth * 0.62, toScreen(5));
+  ctx.translate(toScreen(4), toScreen(6));
   ctx.scale(1.05, 1.02);
-  ctx.fillStyle = "rgba(9, 2, 2, .26)";
+  ctx.fillStyle = "rgba(9, 2, 2, .22)";
   ctx.beginPath();
   ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -538,22 +538,22 @@ function drawRingShadow(rx, ry, depth) {
 }
 
 function drawRingDepth(rx, ry, innerRx, innerRy, depth, touched) {
-  const sideGradient = ctx.createLinearGradient(-rx, 0, rx + depth, 0);
-  sideGradient.addColorStop(0, touched ? "#db2018" : "#e51910");
-  sideGradient.addColorStop(0.45, touched ? "#bd120f" : "#c80d08");
-  sideGradient.addColorStop(1, touched ? "#6f0909" : "#5c0404");
+  const sideGradient = ctx.createLinearGradient(-rx, -ry, rx, ry);
+  sideGradient.addColorStop(0, touched ? "#ff4a34" : "#ff391f");
+  sideGradient.addColorStop(0.5, touched ? "#c91210" : "#d90c08");
+  sideGradient.addColorStop(1, touched ? "#770707" : "#620404");
 
   ctx.fillStyle = sideGradient;
   ctx.beginPath();
-  ctx.ellipse(depth, 0, rx, ry, 0, 0, Math.PI * 2);
-  ctx.ellipse(0, 0, rx, ry, 0, Math.PI * 2, 0, true);
+  ctx.ellipse(0, depth * 0.34, rx, ry, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, -depth * 0.34, Math.max(1, rx - depth * 0.38), Math.max(1, ry - depth * 0.38), 0, Math.PI * 2, 0, true);
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "rgba(55, 2, 2, .5)";
+  ctx.fillStyle = "rgba(58, 1, 1, .34)";
   ctx.beginPath();
-  ctx.ellipse(depth * 0.62, 0, innerRx + depth * 0.34, innerRy, 0, 0, Math.PI * 2);
-  ctx.ellipse(0, 0, innerRx, innerRy, 0, Math.PI * 2, 0, true);
+  ctx.ellipse(0, 0, innerRx + depth * 0.24, innerRy + depth * 0.16, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, -depth * 0.12, innerRx, innerRy, 0, Math.PI * 2, 0, true);
   ctx.closePath();
   ctx.fill();
 }

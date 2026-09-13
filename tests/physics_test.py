@@ -17,7 +17,7 @@ CONFIG = {
         "bodyRadius": 23,
     },
     "rings": {
-        "innerRadius": 49,
+        "innerRadius": 52,
         "outerRadius": 73,
         "depthTilt": 1,
         "visualWidthScale": 0.58,
