@@ -506,20 +506,56 @@ function drawRingHalf(ring, half) {
   const ry = toScreen(ring.outer * CONFIG.rings.visualHeightScale);
   const innerRx = toScreen(ring.inner * CONFIG.rings.visualWidthScale);
   const innerRy = toScreen(ring.inner * CONFIG.rings.visualHeightScale);
+  const depth = toScreen(CONFIG.rings.visualDepth * (ring.touched ? 0.7 : 1));
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(ring.visualTilt || 0);
 
   if (half === "back") {
-    drawFilledRing(rx, ry, innerRx, innerRy, ring.touched ? "#e01818" : "#e00000", true);
-    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#ba1717" : "#9f0909", false, false);
+    drawRingShadow(rx, ry, depth);
+    drawRingDepth(rx, ry, innerRx, innerRy, depth, ring.touched);
+    drawFilledRing(rx + depth, ry, innerRx + depth * 0.44, innerRy, ring.touched ? "#a60c0c" : "#8f0606", false);
+    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#bb1010" : "#a30707", false, false);
     ctx.restore();
     return;
   }
 
-  drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 0.5, Math.PI * 1.5, ring.touched ? "#e01818" : "#e00000", false, true);
+  drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 0.5, Math.PI * 1.5, ring.touched ? "#ff2c1f" : "#ff170c", false, true);
+  drawRingHighlights(rx, ry, innerRx, innerRy);
   ctx.restore();
+}
+
+function drawRingShadow(rx, ry, depth) {
+  ctx.save();
+  ctx.translate(depth * 0.62, toScreen(5));
+  ctx.scale(1.05, 1.02);
+  ctx.fillStyle = "rgba(9, 2, 2, .26)";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawRingDepth(rx, ry, innerRx, innerRy, depth, touched) {
+  const sideGradient = ctx.createLinearGradient(-rx, 0, rx + depth, 0);
+  sideGradient.addColorStop(0, touched ? "#db2018" : "#e51910");
+  sideGradient.addColorStop(0.45, touched ? "#bd120f" : "#c80d08");
+  sideGradient.addColorStop(1, touched ? "#6f0909" : "#5c0404");
+
+  ctx.fillStyle = sideGradient;
+  ctx.beginPath();
+  ctx.ellipse(depth, 0, rx, ry, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, rx, ry, 0, Math.PI * 2, 0, true);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(55, 2, 2, .5)";
+  ctx.beginPath();
+  ctx.ellipse(depth * 0.62, 0, innerRx + depth * 0.34, innerRy, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, innerRx, innerRy, 0, Math.PI * 2, 0, true);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawFilledRing(rx, ry, innerRx, innerRy, fill, shadow) {
@@ -571,6 +607,26 @@ function drawFilledRingHalf(rx, ry, innerRx, innerRy, start, end, fill, shadow, 
   ctx.stroke();
   drawEllipseArc(0, 0, innerRx, innerRy, start, end);
   ctx.stroke();
+}
+
+function drawRingHighlights(rx, ry, innerRx, innerRy) {
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineWidth = toScreen(6);
+  ctx.strokeStyle = "rgba(255, 138, 96, .72)";
+  drawEllipseArc(0, 0, rx - toScreen(9), ry - toScreen(10), Math.PI * 0.78, Math.PI * 1.28);
+  ctx.stroke();
+
+  ctx.lineWidth = toScreen(3.2);
+  ctx.strokeStyle = "rgba(255, 246, 218, .88)";
+  drawEllipseArc(0, 0, rx - toScreen(12), ry - toScreen(14), Math.PI * 0.86, Math.PI * 1.18);
+  ctx.stroke();
+
+  ctx.lineWidth = toScreen(2.2);
+  ctx.strokeStyle = "rgba(68, 2, 2, .55)";
+  drawEllipseArc(0, 0, innerRx + toScreen(4), innerRy + toScreen(4), Math.PI * 1.5, Math.PI * 2.35);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawEllipseArc(x, y, rx, ry, start, end) {
@@ -656,6 +712,14 @@ function drawDolphin() {
   ctx.strokeStyle = "rgba(13, 45, 68, .82)";
   ctx.lineWidth = toScreen(4);
 
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#071f34";
+  ctx.beginPath();
+  ctx.ellipse(toScreen(2), toScreen(5), toScreen(61), toScreen(30), -0.07, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
   ctx.fillStyle = "#6d93aa";
   ctx.beginPath();
   ctx.moveTo(toScreen(-38), toScreen(3));
@@ -704,13 +768,20 @@ function drawDolphin() {
   ctx.fill();
 
   const shine = ctx.createLinearGradient(toScreen(-22), toScreen(-25), toScreen(40), toScreen(0));
-  shine.addColorStop(0, "rgba(255,255,255,.5)");
-  shine.addColorStop(0.7, "rgba(255,255,255,.08)");
+  shine.addColorStop(0, "rgba(255,255,255,.58)");
+  shine.addColorStop(0.7, "rgba(255,255,255,.12)");
   shine.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = shine;
   ctx.beginPath();
   ctx.ellipse(toScreen(8), toScreen(-13), toScreen(34), toScreen(7), -0.13, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, .34)";
+  ctx.lineWidth = toScreen(2.2);
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-24), toScreen(-16));
+  ctx.bezierCurveTo(toScreen(0), toScreen(-31), toScreen(31), toScreen(-29), toScreen(53), toScreen(-14));
+  ctx.stroke();
 
   ctx.fillStyle = "#567d94";
   ctx.beginPath();
