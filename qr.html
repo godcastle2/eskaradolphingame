@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>돌핀 링 러시 QR</title>
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        font-family: Arial, "Noto Sans KR", sans-serif;
+        color: #063f5e;
+        background: linear-gradient(#7adff3, #168dbb);
+      }
+      main {
+        width: min(420px, calc(100vw - 32px));
+        padding: 24px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .92);
+        text-align: center;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      img {
+        width: min(280px, 78vw);
+        aspect-ratio: 1;
+      }
+      code {
+        display: block;
+        margin-top: 12px;
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>돌핀 링 러시</h1>
+      <img id="qr" alt="게임 접속 QR 코드">
+      <code id="url"></code>
+    </main>
+    <script>
+      const gameUrl = new URL("./", location.href).href;
+      document.querySelector("#url").textContent = gameUrl;
+      document.querySelector("#qr").src = "https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=" + encodeURIComponent(gameUrl);
+    </script>
+  </body>
+</html>

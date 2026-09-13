@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <title>돌핀 링 러시</title>
+    <link rel="stylesheet" href="./src/styles.css">
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game" aria-label="돌고래 고리 통과 게임"></canvas>
+
+      <section id="hud" class="hud">
+        <div>
+          <span>Score</span>
+          <strong id="score">0</strong>
+        </div>
+        <div>
+          <span>Clean Combo</span>
+          <strong id="combo">0</strong>
+        </div>
+      </section>
+
+      <div id="toast" class="toast" aria-live="polite"></div>
+
+      <section id="startPanel" class="panel">
+        <h1>돌핀 링 러시</h1>
+        <p>터치로 부드럽게 떠오르고, 고리를 연속 Clean으로 통과하세요.</p>
+        <input id="playerName" maxlength="16" placeholder="닉네임" autocomplete="nickname">
+        <button id="startButton">시작</button>
+        <button id="rankingButton" class="secondary">랭킹</button>
+      </section>
+
+      <section id="gameOverPanel" class="panel hidden">
+        <h2>Game Over</h2>
+        <dl>
+          <div><dt>Score</dt><dd id="finalScore">0</dd></div>
+          <div><dt>Best</dt><dd id="bestScore">0</dd></div>
+          <div><dt>My Rank</dt><dd id="myRank">-</dd></div>
+        </dl>
+        <button id="restartButton">다시하기</button>
+        <button id="showRankingButton" class="secondary">랭킹 확인</button>
+      </section>
+
+      <section id="rankingPanel" class="ranking hidden">
+        <header>
+          <h2>Ranking</h2>
+          <button id="closeRankingButton" aria-label="닫기">×</button>
+        </header>
+        <ol id="rankingList"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="./src/game.js"></script>
+  </body>
+</html>

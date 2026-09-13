@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: dolphin-ring-rush
+    env: docker
+    plan: free
+    healthCheckPath: /healthz
+    disk:
+      name: scores
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DB_PATH
+        value: /data/scores.sqlite3
