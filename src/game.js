@@ -226,7 +226,8 @@ function update(dt) {
     ring.hitCooldown = Math.max(0, ring.hitCooldown - dt);
     resolveRingCollision(ring);
     if (!ring.passed && ring.x < dolphin.x - CONFIG.dolphin.radiusX * 0.35) {
-      const passedThroughHole = getRingClearance(ring).normalized + CONFIG.dolphin.bodyRadius < ring.inner;
+      const passRadius = Math.max(1, CONFIG.dolphin.radiusY - CONFIG.dolphin.passPadding);
+      const passedThroughHole = getRingClearance(ring).normalized + passRadius < ring.inner;
       if (passedThroughHole) {
         ring.passed = true;
         scoreRing(ring);

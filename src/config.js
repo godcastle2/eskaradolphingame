@@ -28,6 +28,7 @@ export const CONFIG = {
     visualScale: 0.72,
     radiusX: 31,
     radiusY: 15,
+    passPadding: 5,
     cleanRadius: 21,
     bodyRadius: 23
   },
