@@ -194,6 +194,11 @@ function update(dt) {
   const dolphin = state.dolphin;
   const body = dolphin.body;
   addForce(body, (CONFIG.world.dolphinX - body.x) * p.horizontalReturn * body.mass, 0);
+  const gravityRelief = ringGravityRelief(body);
+  if (gravityRelief > 0) {
+    addForce(body, 0, -p.gravity * body.mass * gravityRelief);
+    if (body.vy > 0) body.vy *= 1 - 0.34 * gravityRelief;
+  }
   body.vx *= p.horizontalDamping;
   const targetAngle = 0;
   addTorque(body, (targetAngle - body.angle) * p.rotationSmoothing * p.inertia);
@@ -249,6 +254,22 @@ function didPassRing(ring) {
 
   if (ring.touched) return true;
   return false;
+}
+
+function ringGravityRelief(body) {
+  let relief = 0;
+  const cfg = CONFIG.rings;
+  for (const ring of state.rings) {
+    if (ring.passed) continue;
+    const c = getRingContact(body, ring, cfg.depthTilt, cfg.visualWidthScale, cfg.visualHeightScale);
+    const gateRange = cfg.outerRadius * cfg.visualWidthScale + CONFIG.dolphin.radiusX;
+    const inGateDepth = Math.abs(c.localX) < gateRange;
+    const inOpening = getRingClearance(ring).normalized < ring.inner - CONFIG.dolphin.radiusY * 0.15;
+    if (!inGateDepth || !inOpening) continue;
+    const depthFactor = 1 - Math.min(1, Math.abs(c.localX) / gateRange);
+    relief = Math.max(relief, 0.72 + depthFactor * 0.28);
+  }
+  return relief;
 }
 
 function scoreRing(ring) {
@@ -513,10 +534,8 @@ function drawRingHalf(ring, half) {
   ctx.rotate(ring.visualTilt || 0);
 
   if (half === "back") {
-    drawRingShadow(rx, ry, depth);
     drawRingDepth(rx, ry, innerRx, innerRy, depth, ring.touched);
-    drawFilledRing(rx, ry, innerRx, innerRy, ring.touched ? "#c81410" : "#d80805", false);
-    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#9f0c0b" : "#860606", false, false);
+    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#aa0e0c" : "#930706", false, true);
     ctx.restore();
     return;
   }
@@ -526,36 +545,28 @@ function drawRingHalf(ring, half) {
   ctx.restore();
 }
 
-function drawRingShadow(rx, ry, depth) {
-  ctx.save();
-  ctx.translate(toScreen(4), toScreen(6));
-  ctx.scale(1.05, 1.02);
-  ctx.fillStyle = "rgba(9, 2, 2, .22)";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
 function drawRingDepth(rx, ry, innerRx, innerRy, depth, touched) {
-  const sideGradient = ctx.createLinearGradient(-rx, -ry, rx, ry);
-  sideGradient.addColorStop(0, touched ? "#ff4a34" : "#ff391f");
-  sideGradient.addColorStop(0.5, touched ? "#c91210" : "#d90c08");
-  sideGradient.addColorStop(1, touched ? "#770707" : "#620404");
+  const sideGradient = ctx.createLinearGradient(-rx, 0, rx, 0);
+  sideGradient.addColorStop(0, touched ? "#dc1c16" : "#e9160e");
+  sideGradient.addColorStop(0.5, touched ? "#b90e0c" : "#c90907");
+  sideGradient.addColorStop(1, touched ? "#7c0807" : "#700504");
 
+  ctx.save();
+  ctx.globalAlpha = 0.9;
   ctx.fillStyle = sideGradient;
   ctx.beginPath();
-  ctx.ellipse(0, depth * 0.34, rx, ry, 0, 0, Math.PI * 2);
-  ctx.ellipse(0, -depth * 0.34, Math.max(1, rx - depth * 0.38), Math.max(1, ry - depth * 0.38), 0, Math.PI * 2, 0, true);
+  ctx.ellipse(0, 0, rx, ry, 0, Math.PI * 1.47, Math.PI * 2.53);
+  ctx.ellipse(0, 0, innerRx, innerRy, 0, Math.PI * 2.53, Math.PI * 1.47, true);
   ctx.closePath();
   ctx.fill();
+  ctx.restore();
 
-  ctx.fillStyle = "rgba(58, 1, 1, .34)";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, innerRx + depth * 0.24, innerRy + depth * 0.16, 0, 0, Math.PI * 2);
-  ctx.ellipse(0, -depth * 0.12, innerRx, innerRy, 0, Math.PI * 2, 0, true);
-  ctx.closePath();
-  ctx.fill();
+  ctx.save();
+  ctx.lineWidth = Math.max(1, depth * 0.36);
+  ctx.strokeStyle = "rgba(50, 2, 2, .36)";
+  drawEllipseArc(0, 0, innerRx + depth * 0.18, innerRy + depth * 0.1, Math.PI * 1.55, Math.PI * 2.4);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawFilledRing(rx, ry, innerRx, innerRy, fill, shadow) {
