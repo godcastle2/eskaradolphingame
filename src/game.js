@@ -84,6 +84,7 @@ function createState(mode = "playing") {
     particles: makeParticles(),
     backgroundDolphins: makeBackgroundDolphins(),
     spawnTimer: 0,
+    globalStallTimer: 0,
     worldTime: 0,
     lastRingY: CONFIG.world.baseHeight * 0.5
   };
@@ -189,6 +190,7 @@ function update(dt) {
   state.worldTime += dt;
   updateAmbient(dt);
   if (state.mode !== "playing") return;
+  state.globalStallTimer = Math.max(0, (state.globalStallTimer || 0) - dt);
 
   const p = CONFIG.physics;
   const dolphin = state.dolphin;
@@ -230,7 +232,8 @@ function update(dt) {
   for (const ring of state.rings) {
     const stalled = ring.stallTimer > 0;
     ring.stallTimer = Math.max(0, (ring.stallTimer || 0) - dt);
-    const ringSpeed = stalled ? speed * 0.035 : speed;
+    const globalStalled = state.globalStallTimer > 0;
+    const ringSpeed = stalled || globalStalled ? speed * 0.035 : speed;
     ring.x -= ringSpeed * dt;
     ring.vx = -ringSpeed;
     ring.vy = 0;
@@ -308,6 +311,7 @@ function resolveRingCollision(ring) {
   ring.touched = true;
   ring.hitCooldown = cfg.collisionCooldown;
   ring.stallTimer = Math.max(ring.stallTimer || 0, 0.28);
+  state.globalStallTimer = Math.max(state.globalStallTimer || 0, 0.24);
   state.dolphin.x = state.dolphin.body.x;
   state.dolphin.y = state.dolphin.body.y;
   state.dolphin.vx = state.dolphin.body.vx;
@@ -537,115 +541,84 @@ function drawRingHalf(ring, half) {
   ctx.rotate(ring.visualTilt || 0);
 
   if (half === "back") {
-    drawRingDepth(rx, ry, innerRx, innerRy, depth, ring.touched);
-    drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 1.5, Math.PI * 2.5, ring.touched ? "#aa0e0c" : "#930706", false, true);
+    drawTorusRingHalf(rx, ry, innerRx, innerRy, depth, ring.touched, "back");
     ctx.restore();
     return;
   }
 
-  drawFilledRingHalf(rx, ry, innerRx, innerRy, Math.PI * 0.5, Math.PI * 1.5, ring.touched ? "#ef2118" : "#f0170d", false, true);
-  drawRingHighlights(rx, ry, innerRx, innerRy);
+  drawTorusRingHalf(rx, ry, innerRx, innerRy, depth, ring.touched, "front");
   ctx.restore();
 }
 
-function drawRingDepth(rx, ry, innerRx, innerRy, depth, touched) {
-  const sideGradient = ctx.createLinearGradient(-rx, 0, rx, 0);
-  sideGradient.addColorStop(0, touched ? "#dc1c16" : "#e9160e");
-  sideGradient.addColorStop(0.5, touched ? "#b90e0c" : "#c90907");
-  sideGradient.addColorStop(1, touched ? "#7c0807" : "#700504");
+function drawTorusRingHalf(rx, ry, innerRx, innerRy, depth, touched, half) {
+  const segments = 40;
+  const start = half === "back" ? Math.PI * 1.5 : Math.PI * 0.5;
+  const end = half === "back" ? Math.PI * 2.5 : Math.PI * 1.5;
+  const tube = Math.max(toScreen(8), (rx - innerRx + ry - innerRy) * 0.25 + depth * 0.28);
+  const red = touched ? [220, 28, 22] : [244, 20, 12];
 
-  ctx.save();
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = sideGradient;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, rx, ry, 0, Math.PI * 1.47, Math.PI * 2.53);
-  ctx.ellipse(0, 0, innerRx, innerRy, 0, Math.PI * 2.53, Math.PI * 1.47, true);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.lineWidth = Math.max(1, depth * 0.36);
-  ctx.strokeStyle = "rgba(50, 2, 2, .36)";
-  drawEllipseArc(0, 0, innerRx + depth * 0.18, innerRy + depth * 0.1, Math.PI * 1.55, Math.PI * 2.4);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawFilledRing(rx, ry, innerRx, innerRy, fill, shadow) {
-  if (shadow) {
-    ctx.shadowColor = "rgba(12, 5, 4, .3)";
-    ctx.shadowBlur = toScreen(7);
-    ctx.shadowOffsetX = toScreen(4);
-    ctx.shadowOffsetY = toScreen(4);
-  } else {
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+  if (half === "back") {
+    ctx.save();
+    ctx.translate(toScreen(4), toScreen(6));
+    ctx.scale(1.04, 1.02);
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = "#180202";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx + tube * 0.2, ry + tube * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
-  ctx.fillStyle = fill;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-  ctx.ellipse(0, 0, innerRx, innerRy, 0, Math.PI * 2, 0, true);
-  ctx.closePath();
-  ctx.fill();
+  for (let i = 0; i < segments; i++) {
+    const a0 = start + (end - start) * (i / segments);
+    const a1 = start + (end - start) * ((i + 1) / segments);
+    const mid = (a0 + a1) * 0.5;
+    const frontness = (Math.sin(mid) + 1) * 0.5;
+    const light = 0.46 + frontness * 0.42 + Math.max(0, -Math.cos(mid)) * 0.16;
+    const shade = half === "front" ? light + 0.1 : light - 0.18;
+    const depthLift = Math.cos(mid) * depth * 0.16;
+    const color = shadedRed(red, shade);
 
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.lineWidth = toScreen(3);
-  ctx.strokeStyle = "rgba(14, 8, 7, .94)";
-  drawEllipseArc(0, 0, rx, ry, 0, Math.PI * 2);
-  ctx.stroke();
-  drawEllipseArc(0, 0, innerRx, innerRy, 0, Math.PI * 2);
-  ctx.stroke();
-}
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(0, depthLift, rx, ry, 0, a0, a1);
+    ctx.ellipse(0, -depthLift * 0.35, innerRx, innerRy, 0, a1, a0, true);
+    ctx.closePath();
+    ctx.fill();
+  }
 
-function drawFilledRingHalf(rx, ry, innerRx, innerRy, start, end, fill, shadow, stroke = true) {
-  ctx.shadowBlur = shadow ? toScreen(4) : 0;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.fillStyle = fill;
+  ctx.lineWidth = toScreen(2.4);
+  ctx.strokeStyle = "rgba(19, 5, 4, .85)";
   ctx.beginPath();
   ctx.ellipse(0, 0, rx, ry, 0, start, end);
-  ctx.ellipse(0, 0, innerRx, innerRy, 0, end, start, true);
-  ctx.closePath();
-  ctx.fill();
-
-  if (!stroke) return;
-  ctx.shadowBlur = 0;
-  ctx.lineWidth = toScreen(3);
-  ctx.strokeStyle = "rgba(14, 8, 7, .94)";
-  drawEllipseArc(0, 0, rx, ry, start, end);
   ctx.stroke();
-  drawEllipseArc(0, 0, innerRx, innerRy, start, end);
-  ctx.stroke();
-}
-
-function drawRingHighlights(rx, ry, innerRx, innerRy) {
-  ctx.save();
-  ctx.lineCap = "round";
-  ctx.lineWidth = toScreen(6);
-  ctx.strokeStyle = "rgba(255, 138, 96, .72)";
-  drawEllipseArc(0, 0, rx - toScreen(9), ry - toScreen(10), Math.PI * 0.78, Math.PI * 1.28);
-  ctx.stroke();
-
-  ctx.lineWidth = toScreen(3.2);
-  ctx.strokeStyle = "rgba(255, 246, 218, .88)";
-  drawEllipseArc(0, 0, rx - toScreen(12), ry - toScreen(14), Math.PI * 0.86, Math.PI * 1.18);
-  ctx.stroke();
-
-  ctx.lineWidth = toScreen(2.2);
-  ctx.strokeStyle = "rgba(68, 2, 2, .55)";
-  drawEllipseArc(0, 0, innerRx + toScreen(4), innerRy + toScreen(4), Math.PI * 1.5, Math.PI * 2.35);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawEllipseArc(x, y, rx, ry, start, end) {
   ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, 0, start, end);
+  ctx.ellipse(0, 0, innerRx, innerRy, 0, start, end);
+  ctx.stroke();
+
+  if (half === "front") {
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(2, tube * 0.38);
+    ctx.strokeStyle = "rgba(255, 134, 94, .64)";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx - tube * 0.46, ry - tube * 0.58, 0, Math.PI * 0.82, Math.PI * 1.22);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1, tube * 0.18);
+    ctx.strokeStyle = "rgba(255, 242, 214, .78)";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx - tube * 0.68, ry - tube * 0.78, 0, Math.PI * 0.9, Math.PI * 1.14);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function shadedRed(base, light) {
+  const clampLight = clamp(light, 0.18, 1.18);
+  const r = Math.round(base[0] * clampLight);
+  const g = Math.round(base[1] * clampLight);
+  const b = Math.round(base[2] * clampLight);
+  return `rgb(${clamp(r, 0, 255)}, ${clamp(g, 0, 255)}, ${clamp(b, 0, 255)})`;
 }
 
 function showComboBurst(ring, combo) {
