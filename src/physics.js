@@ -108,11 +108,15 @@ export function collideBodyWithTiltedRing(body, ring, options) {
 
   const rvx = body.vx - ring.vx;
   const rvy = body.vy - ring.vy;
-  const normalSpeed = rvx * c.normalX + rvy * c.normalY;
-  const impulseSize = Math.max(options.minImpulse, Math.abs(normalSpeed) * (1 + options.restitution));
   const direction = Math.sign(correction) || 1;
-  const impulseX = c.normalX * impulseSize * direction;
-  const impulseY = c.normalY * impulseSize * direction;
+  const pushX = c.normalX * direction;
+  const pushY = c.normalY * direction;
+  const approachSpeed = Math.max(0, -(rvx * pushX + rvy * pushY));
+  const impulseSize = Math.max(options.minImpulse * 0.28, approachSpeed * (1 + options.restitution));
+  const impulseX = pushX * impulseSize;
+  const impulseY = pushY * impulseSize;
+  body.vx *= 0.94;
+  body.vy *= 0.94;
   applyImpulse(
     body,
     impulseX,

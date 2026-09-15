@@ -22,10 +22,10 @@ CONFIG = {
         "depthTilt": 1,
         "visualWidthScale": 0.58,
         "visualHeightScale": 1.08,
-        "collisionRestitution": 0.24,
-        "collisionImpulse": 118,
-        "positionCorrection": 0.34,
-        "angularImpulseScale": 0.72,
+        "collisionRestitution": 0.18,
+        "collisionImpulse": 96,
+        "positionCorrection": 0.28,
+        "angularImpulseScale": 0.5,
         "passageDepth": 12,
     },
 }
@@ -140,11 +140,15 @@ def collide_body_with_ring(body, ring):
 
     rvx = body["vx"] - ring["vx"]
     rvy = body["vy"] - ring["vy"]
-    normal_speed = rvx * c["normalX"] + rvy * c["normalY"]
-    impulse_size = max(options["minImpulse"], abs(normal_speed) * (1 + options["restitution"]))
     direction = math.copysign(1, correction) if correction else 1
-    impulse_x = c["normalX"] * impulse_size * direction
-    impulse_y = c["normalY"] * impulse_size * direction
+    push_x = c["normalX"] * direction
+    push_y = c["normalY"] * direction
+    approach_speed = max(0, -(rvx * push_x + rvy * push_y))
+    impulse_size = max(options["minImpulse"] * 0.28, approach_speed * (1 + options["restitution"]))
+    impulse_x = push_x * impulse_size
+    impulse_y = push_y * impulse_size
+    body["vx"] *= 0.94
+    body["vy"] *= 0.94
     apply_impulse(
         body,
         impulse_x,

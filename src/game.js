@@ -430,7 +430,7 @@ function draw() {
   ctx.clearRect(0, 0, width, height);
   drawBackground();
   drawRings();
-  drawDolphin();
+  drawCuteDolphin();
   drawFrontRings();
   drawComboBursts();
   if (performance.now() > toastUntil) ui.toast.classList.remove("show");
@@ -696,6 +696,139 @@ function drawComboBursts() {
     ctx.fillText(`COMBO x${burst.combo}`, 0, toScreen(-92 - 20 * ease));
     ctx.restore();
   }
+}
+
+function drawCuteDolphin() {
+  const d = state.dolphin;
+  const x = toScreen(d.x);
+  const y = worldY(d.y);
+  const swim = Math.sin(d.swim);
+  const tail = swim * toScreen(8);
+  const fin = Math.sin(d.swim + 1.2) * toScreen(4);
+
+  ctx.save();
+  ctx.translate(x, y + Math.sin(d.swim * 0.55) * toScreen(1.7));
+  ctx.rotate(d.angle * 0.45);
+  ctx.scale(CONFIG.dolphin.visualScale, CONFIG.dolphin.visualScale);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  ctx.shadowColor = "rgba(0, 31, 65, .38)";
+  ctx.shadowBlur = toScreen(14);
+  ctx.shadowOffsetY = toScreen(4);
+
+  const outline = "rgba(5, 55, 105, .82)";
+  const bodyGradient = ctx.createRadialGradient(toScreen(22), toScreen(-24), toScreen(8), toScreen(2), 0, toScreen(72));
+  bodyGradient.addColorStop(0, "#d9fbff");
+  bodyGradient.addColorStop(0.36, "#5edcff");
+  bodyGradient.addColorStop(0.78, "#2095e4");
+  bodyGradient.addColorStop(1, "#1168bf");
+
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = toScreen(4);
+
+  ctx.fillStyle = "#1684cf";
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-42), toScreen(2));
+  ctx.bezierCurveTo(toScreen(-61), toScreen(-11), toScreen(-78), toScreen(-6) + tail, toScreen(-91), toScreen(1) + tail);
+  ctx.bezierCurveTo(toScreen(-75), toScreen(6), toScreen(-58), toScreen(13) - tail, toScreen(-39), toScreen(10));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#0d6fbd";
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-88), toScreen(1) + tail);
+  ctx.lineTo(toScreen(-111), toScreen(-16) + tail);
+  ctx.quadraticCurveTo(toScreen(-100), toScreen(-3) + tail, toScreen(-88), toScreen(1) + tail);
+  ctx.lineTo(toScreen(-111), toScreen(19) + tail);
+  ctx.quadraticCurveTo(toScreen(-99), toScreen(7) + tail, toScreen(-88), toScreen(1) + tail);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = bodyGradient;
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-43), toScreen(4));
+  ctx.bezierCurveTo(toScreen(-31), toScreen(-29), toScreen(8), toScreen(-43), toScreen(43), toScreen(-26));
+  ctx.bezierCurveTo(toScreen(73), toScreen(-12), toScreen(78), toScreen(19), toScreen(49), toScreen(33));
+  ctx.bezierCurveTo(toScreen(17), toScreen(49), toScreen(-26), toScreen(31), toScreen(-45), toScreen(12));
+  ctx.bezierCurveTo(toScreen(-51), toScreen(7), toScreen(-50), toScreen(4), toScreen(-43), toScreen(4));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  const bellyGradient = ctx.createLinearGradient(toScreen(-18), toScreen(4), toScreen(50), toScreen(33));
+  bellyGradient.addColorStop(0, "rgba(255, 255, 255, .98)");
+  bellyGradient.addColorStop(1, "rgba(206, 246, 255, .72)");
+  ctx.fillStyle = bellyGradient;
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-19), toScreen(11));
+  ctx.bezierCurveTo(toScreen(8), toScreen(25), toScreen(35), toScreen(25), toScreen(58), toScreen(6));
+  ctx.bezierCurveTo(toScreen(49), toScreen(31), toScreen(9), toScreen(42), toScreen(-30), toScreen(20));
+  ctx.bezierCurveTo(toScreen(-34), toScreen(15), toScreen(-29), toScreen(10), toScreen(-19), toScreen(11));
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#0f79cf";
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-5), toScreen(-23));
+  ctx.bezierCurveTo(toScreen(5), toScreen(-48), toScreen(27), toScreen(-43), toScreen(27), toScreen(-16));
+  ctx.bezierCurveTo(toScreen(14), toScreen(-24), toScreen(5), toScreen(-25), toScreen(-5), toScreen(-23));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#0a66b2";
+  ctx.beginPath();
+  ctx.moveTo(toScreen(1), toScreen(15));
+  ctx.bezierCurveTo(toScreen(11), toScreen(30) + fin, toScreen(25), toScreen(39) + fin, toScreen(42), toScreen(34) + fin);
+  ctx.bezierCurveTo(toScreen(31), toScreen(21) + fin, toScreen(16), toScreen(12), toScreen(2), toScreen(9));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#bff4ff";
+  ctx.beginPath();
+  ctx.moveTo(toScreen(39), toScreen(-17));
+  ctx.bezierCurveTo(toScreen(59), toScreen(-25), toScreen(86), toScreen(-15), toScreen(101), toScreen(-3));
+  ctx.bezierCurveTo(toScreen(87), toScreen(7), toScreen(61), toScreen(8), toScreen(44), toScreen(0));
+  ctx.bezierCurveTo(toScreen(40), toScreen(-6), toScreen(38), toScreen(-12), toScreen(39), toScreen(-17));
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#08284e";
+  ctx.beginPath();
+  ctx.arc(toScreen(45), toScreen(-14), toScreen(5.2), 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(toScreen(47), toScreen(-16), toScreen(1.8), 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 136, 168, .42)";
+  ctx.beginPath();
+  ctx.arc(toScreen(55), toScreen(-4), toScreen(5.5), 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(6, 65, 109, .78)";
+  ctx.lineWidth = toScreen(2.2);
+  ctx.beginPath();
+  ctx.arc(toScreen(65), toScreen(-2), toScreen(10), 0.35, 1.3);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, .55)";
+  ctx.lineWidth = toScreen(3);
+  ctx.beginPath();
+  ctx.moveTo(toScreen(-24), toScreen(-14));
+  ctx.bezierCurveTo(toScreen(1), toScreen(-29), toScreen(27), toScreen(-28), toScreen(50), toScreen(-14));
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function drawDolphin() {
