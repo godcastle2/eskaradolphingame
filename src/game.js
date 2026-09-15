@@ -230,7 +230,7 @@ function update(dt) {
   for (const ring of state.rings) {
     const stalled = ring.stallTimer > 0;
     ring.stallTimer = Math.max(0, (ring.stallTimer || 0) - dt);
-    const ringSpeed = stalled ? speed * 0.08 : speed;
+    const ringSpeed = stalled ? speed * 0.035 : speed;
     ring.x -= ringSpeed * dt;
     ring.vx = -ringSpeed;
     ring.vy = 0;
@@ -307,7 +307,7 @@ function resolveRingCollision(ring) {
 
   ring.touched = true;
   ring.hitCooldown = cfg.collisionCooldown;
-  ring.stallTimer = Math.max(ring.stallTimer || 0, 0.18);
+  ring.stallTimer = Math.max(ring.stallTimer || 0, 0.28);
   state.dolphin.x = state.dolphin.body.x;
   state.dolphin.y = state.dolphin.body.y;
   state.dolphin.vx = state.dolphin.body.vx;
